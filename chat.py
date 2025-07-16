@@ -132,7 +132,11 @@ def main():
                     # This way we prevent chat-gpt from talking to itself
                     logger.debug("Username: %s", username)
                     if username not in cp.BLACKLISTED_USERNAMES:
-                        cp.sim_key_presses(openrouter_interact(username, message))
+                        reply = openrouter_interact(username, message)
+                        if reply:
+                            cp.sim_key_presses(reply)
+                        else:
+                            logger.debug("Empty reply, skipping keystrokes")
                     else:
                         logger.debug("Message ignored from blacklisted user")
                 else:
