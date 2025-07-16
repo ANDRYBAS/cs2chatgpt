@@ -11,7 +11,7 @@ CONFIG_FILE = 'config.ini'
 
 config.read(CONFIG_FILE, encoding='utf-8')
 
-BLACKLISTED_USERNAME = config['SETTINGS']['username']
+BLACKLISTED_USERNAMES = [name.strip() for name in config['SETTINGS'].get('blacklisted_usernames', '').split(',') if name.strip()]
 CON_LOG_FILE_PATH = config['SETTINGS']['gameconlogpath']
 CHAT_KEY = config['SETTINGS']['chatkey']
 
