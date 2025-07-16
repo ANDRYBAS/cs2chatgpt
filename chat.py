@@ -1,7 +1,11 @@
 import openai
+import logging
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
+
+logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
 
 
 openai.api_key = cp.config['SETTINGS']['openrouterapikey']
@@ -19,10 +23,12 @@ def set_status(sender, app_data, user_data):
     if Status.running == False:
         dpg.configure_item("start_button", label="Stop")
         dpg.set_value(user_data, "Running: True")
+        logger.debug("Bot started")
 
     elif Status.running == True:
         dpg.configure_item("start_button", label="Start")
         dpg.set_value(user_data, "Running: False")
+        logger.debug("Bot stopped")
 
     Status.running = not Status.running
 
@@ -33,17 +39,24 @@ def save_config():
     cp.config['SETTINGS']['chatkey'] = dpg.get_value("chat_keybind")
     with open(cp.CONFIG_FILE, 'w') as configfile:
         cp.config.write(configfile)
+    logger.debug("Configuration saved")
 
 
 def openrouter_interact(user: str, message: str, content="You are a csgo player, limit responses to 120 characters"):
+    logger.debug("Sending to OpenRouter: %s -> %s", user, message)
     message = f"I'm {user}, {message}"
 
     messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
-    chat = openai.ChatCompletion.create(
-        model="openai/gpt-4.1-nano", messages=messages
-    )
-    reply = chat.choices[0].message.content
-    return reply
+    try:
+        chat = openai.ChatCompletion.create(
+            model="openai/gpt-4.1-nano", messages=messages
+        )
+        reply = chat.choices[0].message.content
+        logger.debug("Received from OpenRouter: %s", reply)
+        return reply
+    except Exception as exc:
+        logger.exception("OpenRouter request failed: %s", exc)
+        return ""
 
 
 def main():
@@ -51,7 +64,7 @@ def main():
     username = ""
     message = ""
     game = cp.detect_game()
-    print(game)
+    logger.debug("Detected game: %s", game)
 
     
 
@@ -83,6 +96,7 @@ def main():
     if cp.config['SETTINGS']['gameconlogpath'] != None:
         logfile = open(cp.CON_LOG_FILE_PATH, encoding='utf-8')
         logfile.seek(0, 2)
+        logger.debug("Log file opened: %s", cp.CON_LOG_FILE_PATH)
 
         
 
@@ -97,15 +111,17 @@ def main():
                 
                 if not line:
                     continue
-                print(line)
+                logger.debug(line.strip())
                 username, message = cp.parse_log(game, line)
 
                 if username and message:
                     #print(f"[DEBUG] {username}: {message}:")
                     # This way we prevent chat-gpt from talking to itself
-                    print(f"[DEBUG] {cp.BLACKLISTED_USERNAME}: {username}:")
-                    if cp.BLACKLISTED_USERNAME != username: 
+                    logger.debug("Username: %s", username)
+                    if cp.BLACKLISTED_USERNAME != username:
                         cp.sim_key_presses(openrouter_interact(username, message))
+                    else:
+                        logger.debug("Message ignored from blacklisted user")
                 else:
                     continue
     

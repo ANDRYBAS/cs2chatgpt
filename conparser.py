@@ -2,6 +2,9 @@ import time
 import configparser
 import keyboard
 import psutil
+import logging
+
+logger = logging.getLogger(__name__)
 
 config = configparser.ConfigParser()
 CONFIG_FILE = 'config.ini'
@@ -58,22 +61,21 @@ def parse_log(game, line: str):
     message = ""
     match game:
         case "cs2":
-            if "[ALL]" in line:
-                parsed_log = line.partition("[ALL] ")[2].split(": ")
-            if "[TEAM]" in line:
-                parsed_log = line.partition("[TEAM] ")[2].split(": ")
+            if "[ALL]" in line or "[ВСЕМ]" in line:
+                if "[ALL]" in line:
+                    parsed_log = line.partition("[ALL] ")[2].split(": ")
+                else:
+                    parsed_log = line.partition("[ВСЕМ] ")[2].split(": ")
+            if "[TEAM]" in line or "[Т]" in line or "[СП]" in line:
+                if "[TEAM]" in line:
+                    parsed_log = line.partition("[TEAM] ")[2].split(": ")
+                elif "[Т]" in line:
+                    parsed_log = line.partition("[Т] ")[2].split(": ")
+                else:
+                    parsed_log = line.partition("[СП] ")[2].split(": ")
             if "[DEAD]" in line:
                 parsed_log[0] = parsed_log[0].replace(" [DEAD]", '')
-                print(f"DEAD {parsed_log}")
-            if "[ВСЕМ]" in line:
-                parsed_log[0] = parsed_log[0].replace(" [ВСЕМ]", '')
-                print(f"[ВСЕМ] {parsed_log}")
-            if "[Т]" in line:
-                parsed_log[0] = parsed_log[0].replace(" [Т]", '')
-                print(f"[Т] {parsed_log}")
-            if "[СП]" in line:
-                parsed_log[0] = parsed_log[0].replace(" [СП]", '')
-                print(f"[СП] {parsed_log}")
+                logger.debug("DEAD %s", parsed_log)
 
 
 
@@ -94,9 +96,11 @@ def parse_log(game, line: str):
 
     username = parsed_log[0]
     username = username.replace(u'\u200e', '')  # This gets rid of the 'LEFT-TO-RIGHT MARK' char.
-    
+
     message = parsed_log[1]
-    
+
+    logger.debug("Parsed line '%s' -> %s", line.strip(), [username, message])
+
     return [username, message]
 
 
