@@ -34,7 +34,7 @@ def set_status(sender, app_data, user_data):
 
 
 def save_config():
-    cp.config['SETTINGS']['username'] = dpg.get_value("username")
+    cp.config['SETTINGS']['bannednicks'] = dpg.get_value("banned_nicks")
     cp.config['SETTINGS']['gameconlogpath'] = dpg.get_value("conlog")
     cp.config['SETTINGS']['chatkey'] = dpg.get_value("chat_keybind")
     with open(cp.CONFIG_FILE, 'w') as configfile:
@@ -74,7 +74,9 @@ def main():
     with dpg.window(label="Chat-Strike", width=600, height=300, tag="Chat-Strike"):
         dpg.add_text(f"Detected game: {game}")
         
-        dpg.add_input_text(hint="Blacklisted username", default_value=cp.BLACKLISTED_USERNAME, tag="username")
+        dpg.add_input_text(hint="Banned nicknames (comma separated)",
+                           default_value=','.join(cp.BANNED_NICKS),
+                           tag="banned_nicks")
         dpg.add_input_text(hint=".log file path", default_value=cp.CON_LOG_FILE_PATH, tag="conlog")
         dpg.add_input_text(hint="OpenRouter key", default_value=openai.api_key, password=True, tag="openapi_key")
         dpg.add_input_text(hint="Chat keybind", default_value=cp.CHAT_KEY, tag="chat_keybind")
@@ -118,7 +120,7 @@ def main():
                     #print(f"[DEBUG] {username}: {message}:")
                     # This way we prevent chat-gpt from talking to itself
                     logger.debug("Username: %s", username)
-                    if cp.BLACKLISTED_USERNAME != username:
+                    if username not in cp.BANNED_NICKS:
                         cp.sim_key_presses(openrouter_interact(username, message))
                     else:
                         logger.debug("Message ignored from blacklisted user")

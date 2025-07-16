@@ -19,7 +19,7 @@ First, you must enable console logging, to achieve this you can do one of the fo
 
 If you used the latter option your path probably looks something like this: ``C:\Program Files\SteamLibrary\steamapps\common\Counter-Strike Global Offensive\game\csgo\console.log``
 
-+ Open `config.ini` and set `gameconlogpath` to the appropriate path, there you will also set your in-game username and your OpenRouter API key.
++ Open `config.ini` и укажи путь в `gameconlogpath`. В поле `bannednicks` перечисли ники через запятую, которые бот должен игнорировать, и введи свой OpenRouter API ключ.
 
 Now you can do `python chat.py`
 

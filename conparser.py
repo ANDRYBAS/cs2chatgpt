@@ -11,7 +11,8 @@ CONFIG_FILE = 'config.ini'
 
 config.read(CONFIG_FILE, encoding='utf-8')
 
-BLACKLISTED_USERNAME = config['SETTINGS']['username']
+# List of nicknames to ignore, comma separated in config
+BANNED_NICKS = [n.strip() for n in config['SETTINGS'].get('bannednicks', '').split(',') if n.strip()]
 CON_LOG_FILE_PATH = config['SETTINGS']['gameconlogpath']
 CHAT_KEY = config['SETTINGS']['chatkey']
 
