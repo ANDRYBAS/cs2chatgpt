@@ -23,6 +23,9 @@ If you used the latter option your path probably looks something like this: ``C:
 
 Now you can do `python chat.py`
 
+The system prompt for ChatGPT is stored in `system_prompt.txt`. Вы можете
+отредактировать этот файл, чтобы изменить поведение бота.
+
 
 ### Example
 
