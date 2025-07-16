@@ -44,3 +44,5 @@ with open(cp.CON_LOG_FILE_PATH, encoding='utf-8') as logfile:
 ## How it works
 
 Very similar to Isaac's framework this script reads the console log file. New entries are parsed and sent to chat-gpt to generate a response which is then sent back in game chat through simulated keystrokes.
+
+If messages do not appear in game, try running the script with administrator rights. Some games ignore simulated key presses without the proper permissions.

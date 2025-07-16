@@ -117,10 +117,26 @@ def rt_file_read(file: __file__):
 
 
 def sim_key_presses(text: str):
+    """Send a chat message using several input methods."""
     keyboard.press_and_release(CHAT_KEY)
-    time.sleep(0.01)
-    keyboard.write(text)
-    time.sleep(0.01)
+    time.sleep(0.05)
+    try:
+        keyboard.write(text)
+    except Exception as exc:
+        logger.debug("keyboard.write failed: %s, falling back to win32", exc)
+        _win32_write(text)
+    time.sleep(0.05)
     keyboard.press_and_release('enter')
+
+
+def _win32_write(text: str):
+    """Fallback input using Win32 API for games that ignore keyboard.write."""
+    import ctypes
+
+    user32 = ctypes.windll.user32
+    for char in text:
+        vk = user32.VkKeyScanW(ord(char)) & 0xFF
+        user32.keybd_event(vk, 0, 0, 0)
+        user32.keybd_event(vk, 0, 2, 0)
 
 
