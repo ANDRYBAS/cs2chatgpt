@@ -1,11 +1,15 @@
-
 import openai
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
 
 
-openai.api_key = cp.config['SETTINGS']['openaiapikey']
+openai.api_key = cp.config['SETTINGS']['openrouterapikey']
+openai.api_base = "https://openrouter.ai/api/v1"
+openai.default_headers = {
+    "HTTP-Referer": "https://github.com/ANDRYBAS/cs2chatgpt",
+    "X-Title": "Chat-Strike"
+}
 
 class Status():
     running = False
@@ -31,12 +35,12 @@ def save_config():
         cp.config.write(configfile)
 
 
-def openai_interact(user: str, message: str, content="You are a csgo player, limit responses to 120 characters"):
+def openrouter_interact(user: str, message: str, content="You are a csgo player, limit responses to 120 characters"):
     message = f"I'm {user}, {message}"
 
     messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
     chat = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", messages=messages
+        model="openai/gpt-4.1-nano", messages=messages
     )
     reply = chat.choices[0].message.content
     return reply
@@ -59,7 +63,7 @@ def main():
         
         dpg.add_input_text(hint="Blacklisted username", default_value=cp.BLACKLISTED_USERNAME, tag="username")
         dpg.add_input_text(hint=".log file path", default_value=cp.CON_LOG_FILE_PATH, tag="conlog")
-        dpg.add_input_text(hint="Openapi key", default_value=openai.api_key, password=True, tag="openapi_key")
+        dpg.add_input_text(hint="OpenRouter key", default_value=openai.api_key, password=True, tag="openapi_key")
         dpg.add_input_text(hint="Chat keybind", default_value=cp.CHAT_KEY, tag="chat_keybind")
 
         dpg.add_button(label="Save", callback=save_config)
@@ -101,7 +105,7 @@ def main():
                     # This way we prevent chat-gpt from talking to itself
                     print(f"[DEBUG] {cp.BLACKLISTED_USERNAME}: {username}:")
                     if cp.BLACKLISTED_USERNAME != username: 
-                        cp.sim_key_presses(openai_interact(username, message))
+                        cp.sim_key_presses(openrouter_interact(username, message))
                 else:
                     continue
     
