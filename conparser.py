@@ -65,6 +65,16 @@ def parse_log(game, line: str):
             if "[DEAD]" in line:
                 parsed_log[0] = parsed_log[0].replace(" [DEAD]", '')
                 print(f"DEAD {parsed_log}")
+            if "[ВСЕМ]" in line:
+                parsed_log[0] = parsed_log[0].replace(" [ВСЕМ]", '')
+                print(f"[ВСЕМ] {parsed_log}")
+            if "[Т]" in line:
+                parsed_log[0] = parsed_log[0].replace(" [Т]", '')
+                print(f"[Т] {parsed_log}")
+            if "[СП]" in line:
+                parsed_log[0] = parsed_log[0].replace(" [СП]", '')
+                print(f"[СП] {parsed_log}")
+
 
 
      
