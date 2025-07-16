@@ -1,4 +1,4 @@
-import openai
+import requests
 import logging
 
 import dearpygui.dearpygui as dpg
@@ -8,12 +8,7 @@ logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
 
-openai.api_key = cp.config['SETTINGS']['openrouterapikey']
-openai.api_base = "https://openrouter.ai/api/v1"
-openai.default_headers = {
-    "HTTP-Referer": "https://github.com/ANDRYBAS/cs2chatgpt",
-    "X-Title": "Chat-Strike"
-}
+OPENROUTER_API_KEY = cp.config['SETTINGS']['openrouterapikey']
 
 class Status():
     running = False
@@ -47,11 +42,27 @@ def openrouter_interact(user: str, message: str, content="You are a csgo player,
     message = f"I'm {user}, {message}"
 
     messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
+    data = {
+        "model": "openai/gpt-4.1-nano",
+        "messages": messages,
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://github.com/ANDRYBAS/cs2chatgpt",
+        "X-Title": "Chat-Strike",
+        "Content-Type": "application/json",
+    }
+
     try:
-        chat = openai.ChatCompletion.create(
-            model="openai/gpt-4.1-nano", messages=messages
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=30,
         )
-        reply = chat.choices[0].message.content
+        logger.debug("OpenRouter status: %s", response.status_code)
+        response.raise_for_status()
+        reply = response.json()["choices"][0]["message"]["content"]
         logger.debug("Received from OpenRouter: %s", reply)
         return reply
     except Exception as exc:
@@ -76,7 +87,7 @@ def main():
         
         dpg.add_input_text(hint="Blacklisted username", default_value=cp.BLACKLISTED_USERNAME, tag="username")
         dpg.add_input_text(hint=".log file path", default_value=cp.CON_LOG_FILE_PATH, tag="conlog")
-        dpg.add_input_text(hint="OpenRouter key", default_value=openai.api_key, password=True, tag="openapi_key")
+        dpg.add_input_text(hint="OpenRouter key", default_value=OPENROUTER_API_KEY, password=True, tag="openapi_key")
         dpg.add_input_text(hint="Chat keybind", default_value=cp.CHAT_KEY, tag="chat_keybind")
 
         dpg.add_button(label="Save", callback=save_config)
