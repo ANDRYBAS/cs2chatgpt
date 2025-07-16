@@ -108,9 +108,11 @@ def parse_log(game, line: str):
 
 
 def rt_file_read(file: __file__):
-    # Reads console.log in real time 
+    """Reads console.log in real time and yields new lines."""
     line = file.readline()
-
+    if not line:
+        # небольшая пауза, чтобы не крутить цикл на 100%
+        time.sleep(0.01)
     return line
 
 
