@@ -69,7 +69,7 @@ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTE
 
     messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
     data = {
-        "model": "openai/gpt-4.1-nano",
+        "model": "openai/gpt-4.1-mini",
         "messages": messages,
     }
     headers = {
