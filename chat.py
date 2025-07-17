@@ -30,7 +30,7 @@ def debug_log(text: str):
     if dpg.does_item_exist("debug_console"):
         current = dpg.get_value("debug_console")
         dpg.set_value("debug_console", f"{current}{text}\n")
-        dpg.set_y_scroll("debug_console", dpg.get_y_scroll_max("debug_console"))
+        dpg.set_y_scroll("Debug Console", dpg.get_y_scroll_max("Debug Console"))
 
 
 def set_status(sender, app_data, user_data):
