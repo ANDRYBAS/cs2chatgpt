@@ -109,11 +109,15 @@ def main():
     dpg.create_viewport(title='Chat-Strike', width=600, height=500)
 
     if sys.platform.startswith('win'):
-        font_path = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'consola.ttf')
-        if os.path.exists(font_path):
-            with dpg.font_registry():
-                default_font = dpg.add_font(font_path, 16)
-                dpg.bind_font(default_font)
+        # Попробуем подобрать стандартный моноширинный шрифт с поддержкой кириллицы
+        win_dir = os.environ.get('WINDIR', 'C:\\Windows')
+        for fname in ("consola.ttf", "lucon.ttf", "cour.ttf"):
+            font_path = os.path.join(win_dir, "Fonts", fname)
+            if os.path.exists(font_path):
+                with dpg.font_registry():
+                    default_font = dpg.add_font(font_path, 14)
+                    dpg.bind_font(default_font)
+                break
 
     with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
         dpg.add_text(f"Detected game: {game}")
@@ -131,7 +135,7 @@ def main():
         dpg.add_button(label="Start", callback=set_status, user_data=status_text, tag="start_button")
 
     with dpg.window(label="Debug Console", width=600, height=300, pos=(0,200), tag="Debug Console"):
-        dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=-1)
+        dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=280)
 
 
 
