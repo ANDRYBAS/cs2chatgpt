@@ -43,7 +43,7 @@ with open(cp.CON_LOG_FILE_PATH, encoding=cp.CON_LOG_ENCODING) as logfile:
             line = cp.rt_file_read(logfile)
             if not line:
                 continue
-            print(cp.parse_log(game, line)) # [username, message, chat_type, prefix]
+            print(cp.parse_log(game, line))  # ParsedLog(username, message, chat_type, prefix, is_dead)
 ```
 
 

@@ -3,6 +3,7 @@ import configparser
 import keyboard
 import psutil
 import logging
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,15 @@ TEAM_CHAT_KEY = config['SETTINGS'].get('teamchatkey', 'u')
 # Use UTF-8 by default as modern Source games output logs in this encoding.
 # Set `conlogencoding` in `config.ini` if your game uses another codepage.
 CON_LOG_ENCODING = config['SETTINGS'].get('conlogencoding', 'utf-8')
+
+
+@dataclass
+class ParsedLog:
+    username: str
+    message: str
+    chat_type: str | None
+    prefix: str
+    is_dead: bool = False
 
 
 def detect_game(custom_proc="customproc"):
@@ -61,7 +71,7 @@ def parse_log(game, line: str):
     if "Source2Shutdown" in line:
         exit() #TODO: make this optional
 
-    is_dead = False # Добавляем флаг для определения статуса "мертв"
+    is_dead = False
     parsed_log = ["", ""]
     username = ""
     message = ""
@@ -113,17 +123,17 @@ def parse_log(game, line: str):
             return None   
 
     username = parsed_log[0]
-    username = username.replace(u'‎', '')  # This gets rid of the 'LEFT-TO-RIGHT MARK' char.
-
-    # Если игрок мертв, добавляем [МЕРТВ] к имени пользователя
-    if is_dead:
-        username += ' [МЕРТВ]'
+    username = username.replace(u'\u200e', '')
 
     message = parsed_log[1]
 
-    logger.debug("Parsed line '%s' -> %s", line.strip(), [username, message, chat_type, prefix])
+    logger.debug(
+        "Parsed line '%s' -> %s",
+        line.strip(),
+        [username, message, chat_type, prefix, is_dead]
+    )
 
-    return [username, message, chat_type, prefix]
+    return ParsedLog(username, message, chat_type, prefix, is_dead)
 
 
 
