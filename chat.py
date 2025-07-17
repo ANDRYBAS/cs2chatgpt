@@ -116,8 +116,23 @@ def main():
             if os.path.exists(font_path):
                 with dpg.font_registry():
                     default_font = dpg.add_font(font_path, 14)
+                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
                     dpg.bind_font(default_font)
                 break
+        else:
+            font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
+            if os.path.exists(font_path):
+                with dpg.font_registry():
+                    default_font = dpg.add_font(font_path, 14)
+                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                    dpg.bind_font(default_font)
+    else:
+        font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
+        if os.path.exists(font_path):
+            with dpg.font_registry():
+                default_font = dpg.add_font(font_path, 14)
+                dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                dpg.bind_font(default_font)
 
     with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
         dpg.add_text(f"Detected game: {game}")

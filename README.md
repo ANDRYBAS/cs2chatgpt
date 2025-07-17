@@ -24,7 +24,7 @@ If you used the latter option your path probably looks something like this: ``C:
 лог в другой кодировке (например, `cp1251`), укажите её в этом поле. Здесь же можно
 задать список ников в `blacklisted_usernames` и свой OpenRouter API ключ.
 
-Now you can do `python chat.py`. В интерфейсе появилась отладочная консоль, куда дублируются ваши сообщения и ответы бота.
+Now you can do `python chat.py`. В интерфейсе появилась отладочная консоль, куда дублируются ваши сообщения и ответы бота. Если кириллица отображается как `???`, проверьте `fonts/DejaVuSansMono.ttf` и убедитесь, что файл на месте.
 
 The system prompt for ChatGPT is stored in `system_prompt.txt`. Вы можете
 отредактировать этот файл, чтобы изменить поведение бота.
