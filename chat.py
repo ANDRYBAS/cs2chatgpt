@@ -155,8 +155,11 @@ def main():
                     if username not in cp.BLACKLISTED_USERNAMES:
                         reply = openrouter_interact(username, message)
                         if reply:
-                            key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
-                            cp.sim_key_presses(reply, key)
+                            if reply.strip() == "[IGNORE]":
+                                logger.debug("[IGNORE] received, skipping keystrokes")
+                            else:
+                                key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
+                                cp.sim_key_presses(reply, key)
                         else:
                             logger.debug("Empty reply, skipping keystrokes")
                     else:
