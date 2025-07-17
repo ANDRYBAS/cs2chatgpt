@@ -15,6 +15,7 @@ BLACKLISTED_USERNAMES = [name.strip() for name in config['SETTINGS'].get('blackl
 CON_LOG_FILE_PATH = config['SETTINGS']['gameconlogpath']
 CHAT_KEY = config['SETTINGS']['chatkey']
 TEAM_CHAT_KEY = config['SETTINGS'].get('teamchatkey', 'u')
+CON_LOG_ENCODING = config['SETTINGS'].get('conlogencoding', 'cp1251')
 
 
 def detect_game(custom_proc="customproc"):
@@ -62,21 +63,27 @@ def parse_log(game, line: str):
     username = ""
     message = ""
     chat_type = None
+    prefix = ""
     match game:
         case "cs2":
             if "[TEAM]" in line or "[Т]" in line or "[СП]" in line:
                 chat_type = "team"
                 if "[TEAM]" in line:
+                    prefix = "[TEAM]"
                     parsed_log = line.partition("[TEAM] ")[2].split(": ")
                 elif "[Т]" in line:
+                    prefix = "[Т]"
                     parsed_log = line.partition("[Т] ")[2].split(": ")
                 else:
+                    prefix = "[СП]"
                     parsed_log = line.partition("[СП] ")[2].split(": ")
             elif "[ALL]" in line or "[ВСЕМ]" in line:
                 chat_type = "all"
                 if "[ALL]" in line:
+                    prefix = "[ALL]"
                     parsed_log = line.partition("[ALL] ")[2].split(": ")
                 else:
+                    prefix = "[ВСЕМ]"
                     parsed_log = line.partition("[ВСЕМ] ")[2].split(": ")
             if "[DEAD]" in line:
                 parsed_log[0] = parsed_log[0].replace(" [DEAD]", '')
@@ -104,9 +111,9 @@ def parse_log(game, line: str):
 
     message = parsed_log[1]
 
-    logger.debug("Parsed line '%s' -> %s", line.strip(), [username, message, chat_type])
+    logger.debug("Parsed line '%s' -> %s", line.strip(), [username, message, chat_type, prefix])
 
-    return [username, message, chat_type]
+    return [username, message, chat_type, prefix]
 
 
 

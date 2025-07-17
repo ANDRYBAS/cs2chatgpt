@@ -40,7 +40,7 @@ with open(cp.CON_LOG_FILE_PATH, encoding='utf-8') as logfile:
             line = cp.rt_file_read(logfile)
             if not line:
                 continue
-            print(cp.parse_log(game, line)) # Print each new line in console log file to terminal
+            print(cp.parse_log(game, line)) # [username, message, chat_type, prefix]
 ```
 
 
