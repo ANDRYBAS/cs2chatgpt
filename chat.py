@@ -40,7 +40,7 @@ def set_status(sender, app_data, user_data):
         dpg.configure_item("start_button", label="Stop")
         dpg.set_value(user_data, "Running: True")
         logger.debug("Bot started")
-        debug_log("[INFO] Bot started")
+        debug_log("[ИНФО] Bot started")
 
     elif Status.running == True:
         dpg.configure_item("start_button", label="Start")
@@ -115,23 +115,23 @@ def main():
             font_path = os.path.join(win_dir, "Fonts", fname)
             if os.path.exists(font_path):
                 with dpg.font_registry():
-                    default_font = dpg.add_font(font_path, 14)
-                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                    with dpg.font(font_path, 14) as default_font:
+                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
                     dpg.bind_font(default_font)
                 break
         else:
             font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
             if os.path.exists(font_path):
                 with dpg.font_registry():
-                    default_font = dpg.add_font(font_path, 14)
-                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                    with dpg.font(font_path, 14) as default_font:
+                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
                     dpg.bind_font(default_font)
     else:
         font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
         if os.path.exists(font_path):
             with dpg.font_registry():
-                default_font = dpg.add_font(font_path, 14)
-                dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                with dpg.font(font_path, 14) as default_font:
+                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
                 dpg.bind_font(default_font)
 
     with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):

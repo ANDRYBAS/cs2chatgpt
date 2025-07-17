@@ -1,15 +1,9 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/chat.py b/chat.py
-index c666fbab2fc34eb77672cba141781725856ad69d..14eb10abf109af93ee2ef17b55d7f2fc4bca30c6 100644
+index 3976b5d8fdec5a79b9b57d8b7ce79df0e61d0df9..3a8c4d71c7718651ec12cad7c58c6f1ed092f976 100644
 --- a/chat.py
 +++ b/chat.py
-@@ -87,73 +87,77 @@ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTE
-         )
-         logger.debug("OpenRouter status: %s", response.status_code)
-         response.raise_for_status()
-         reply = response.json()["choices"][0]["message"]["content"]
-         logger.debug("Received from OpenRouter: %s", reply)
-         debug_log(f"< {reply}")
+@@ -93,67 +93,67 @@ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTE
          return reply
      except Exception as exc:
          logger.exception("OpenRouter request failed: %s", exc)
@@ -29,20 +23,36 @@ index c666fbab2fc34eb77672cba141781725856ad69d..14eb10abf109af93ee2ef17b55d7f2fc
      dpg.create_viewport(title='Chat-Strike', width=600, height=500)
  
      if sys.platform.startswith('win'):
--        font_path = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'consola.ttf')
--        if os.path.exists(font_path):
--            with dpg.font_registry():
--                default_font = dpg.add_font(font_path, 16)
--                dpg.bind_font(default_font)
-+        # Попробуем подобрать стандартный моноширинный шрифт с поддержкой кириллицы
-+        win_dir = os.environ.get('WINDIR', 'C:\\Windows')
-+        for fname in ("consola.ttf", "lucon.ttf", "cour.ttf"):
-+            font_path = os.path.join(win_dir, "Fonts", fname)
-+            if os.path.exists(font_path):
-+                with dpg.font_registry():
-+                    default_font = dpg.add_font(font_path, 14)
-+                    dpg.bind_font(default_font)
-+                break
+         # Попробуем подобрать стандартный моноширинный шрифт с поддержкой кириллицы
+         win_dir = os.environ.get('WINDIR', 'C:\\Windows')
+         for fname in ("consola.ttf", "lucon.ttf", "cour.ttf"):
+             font_path = os.path.join(win_dir, "Fonts", fname)
+             if os.path.exists(font_path):
+                 with dpg.font_registry():
+-                    default_font = dpg.add_font(font_path, 14)
+-                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
++                    with dpg.font(font_path, 14) as default_font:
++                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                     dpg.bind_font(default_font)
+                 break
+         else:
+             font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
+             if os.path.exists(font_path):
+                 with dpg.font_registry():
+-                    default_font = dpg.add_font(font_path, 14)
+-                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
++                    with dpg.font(font_path, 14) as default_font:
++                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                     dpg.bind_font(default_font)
+     else:
+         font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
+         if os.path.exists(font_path):
+             with dpg.font_registry():
+-                default_font = dpg.add_font(font_path, 14)
+-                dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
++                with dpg.font(font_path, 14) as default_font:
++                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                 dpg.bind_font(default_font)
  
      with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
          dpg.add_text(f"Detected game: {game}")
@@ -60,33 +70,13 @@ index c666fbab2fc34eb77672cba141781725856ad69d..14eb10abf109af93ee2ef17b55d7f2fc
          dpg.add_button(label="Start", callback=set_status, user_data=status_text, tag="start_button")
  
      with dpg.window(label="Debug Console", width=600, height=300, pos=(0,200), tag="Debug Console"):
--        dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=-1)
-+        dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=280)
+         dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=280)
  
  
  
      dpg.set_primary_window("Chat-Strike", True)
      dpg.setup_dearpygui()
      dpg.show_viewport()
- 
-     with dpg.handler_registry():
-         dpg.add_key_press_handler(dpg.mvKey_Add, callback=set_status, user_data=status_text)
- 
-     if cp.config['SETTINGS']['gameconlogpath'] != None:
-         logfile = open(cp.CON_LOG_FILE_PATH, encoding=cp.CON_LOG_ENCODING, errors='ignore')
-         logfile.seek(0, 2)
-         logger.debug("Log file opened: %s", cp.CON_LOG_FILE_PATH)
- 
-         
- 
- 
-     while dpg.is_dearpygui_running():
-         dpg.render_dearpygui_frame()
- 
-         if Status.running == True:
-             if logfile:
-                 
-                 line = cp.rt_file_read(logfile)
  
 EOF
 )
