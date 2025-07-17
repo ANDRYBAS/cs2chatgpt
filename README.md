@@ -19,7 +19,7 @@ First, you must enable console logging, to achieve this you can do one of the fo
 
 If you used the latter option your path probably looks something like this: ``C:\Program Files\SteamLibrary\steamapps\common\Counter-Strike Global Offensive\game\csgo\console.log``
 
-+ Open `config.ini` and set `gameconlogpath` to the appropriate path. Здесь же можно указать список ников в `blacklisted_usernames` (через запятую) и свой OpenRouter API ключ.
++ Open `config.ini` и впишите `gameconlogpath`. Тут же настраивается `conlogencoding`, можно указать список ников в `blacklisted_usernames` и свой OpenRouter API ключ.
 
 Now you can do `python chat.py`. В интерфейсе появилась отладочная консоль, куда дублируются ваши сообщения и ответы бота.
 
@@ -34,7 +34,7 @@ import conparser as cp
 
 game = cp.detect_game()
 
-with open(cp.CON_LOG_FILE_PATH, encoding='utf-8') as logfile:
+with open(cp.CON_LOG_FILE_PATH, encoding=cp.CON_LOG_ENCODING) as logfile:
         logfile.seek(0, 2)  # Point cursor to the end of console.log to retrieve latest line
         while True:
             line = cp.rt_file_read(logfile)
