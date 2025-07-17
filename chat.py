@@ -180,14 +180,23 @@ def main():
                 if not line:
                     continue
                 logger.debug(line.strip())
-                username, message, chat_type, prefix = cp.parse_log(game, line)
+                parsed = cp.parse_log(game, line)
+                if parsed is None:
+                    continue
+                username = parsed.username
+                message = parsed.message
+                chat_type = parsed.chat_type
+                prefix = parsed.prefix
+                display_name = (
+                    f"{username} [МЕРТВ]" if parsed.is_dead else username
+                )
 
                 if username and message:
                     #print(f"[DEBUG] {username}: {message}:")
                     # This way we prevent chat-gpt from talking to itself
                     logger.debug("Username: %s", username)
                     if username not in cp.BLACKLISTED_USERNAMES:
-                        reply = openrouter_interact(username, message, prefix)
+                        reply = openrouter_interact(display_name, message, prefix)
                         if reply:
                             if reply.strip() == "[IGNORE]":
                                 logger.debug("[IGNORE] received, skipping keystrokes")
