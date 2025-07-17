@@ -14,6 +14,7 @@ config.read(CONFIG_FILE, encoding='utf-8')
 BLACKLISTED_USERNAMES = [name.strip() for name in config['SETTINGS'].get('blacklisted_usernames', '').split(',') if name.strip()]
 CON_LOG_FILE_PATH = config['SETTINGS']['gameconlogpath']
 CHAT_KEY = config['SETTINGS']['chatkey']
+TEAM_CHAT_KEY = config['SETTINGS'].get('teamchatkey', 'u')
 
 
 def detect_game(custom_proc="customproc"):
@@ -48,7 +49,8 @@ def parse_log(game, line: str):
         line (str): String fetched from the source console log to parse
 
         Returns:
-            list: In-game username (index 0), and message (index 1) 
+            list: In-game username (index 0), message (index 1),
+                  and chat type 'all' or 'team' (index 2)
 
     """
 
@@ -56,23 +58,26 @@ def parse_log(game, line: str):
     if "Source2Shutdown" in line:
         exit() #TODO: make this optional
 
-    parsed_log = ["",""]
+    parsed_log = ["", ""]
     username = ""
     message = ""
+    chat_type = None
     match game:
         case "cs2":
-            if "[ALL]" in line or "[ВСЕМ]" in line:
-                if "[ALL]" in line:
-                    parsed_log = line.partition("[ALL] ")[2].split(": ")
-                else:
-                    parsed_log = line.partition("[ВСЕМ] ")[2].split(": ")
             if "[TEAM]" in line or "[Т]" in line or "[СП]" in line:
+                chat_type = "team"
                 if "[TEAM]" in line:
                     parsed_log = line.partition("[TEAM] ")[2].split(": ")
                 elif "[Т]" in line:
                     parsed_log = line.partition("[Т] ")[2].split(": ")
                 else:
                     parsed_log = line.partition("[СП] ")[2].split(": ")
+            elif "[ALL]" in line or "[ВСЕМ]" in line:
+                chat_type = "all"
+                if "[ALL]" in line:
+                    parsed_log = line.partition("[ALL] ")[2].split(": ")
+                else:
+                    parsed_log = line.partition("[ВСЕМ] ")[2].split(": ")
             if "[DEAD]" in line:
                 parsed_log[0] = parsed_log[0].replace(" [DEAD]", '')
                 logger.debug("DEAD %s", parsed_log)
@@ -99,9 +104,9 @@ def parse_log(game, line: str):
 
     message = parsed_log[1]
 
-    logger.debug("Parsed line '%s' -> %s", line.strip(), [username, message])
+    logger.debug("Parsed line '%s' -> %s", line.strip(), [username, message, chat_type])
 
-    return [username, message]
+    return [username, message, chat_type]
 
 
 
@@ -116,9 +121,9 @@ def rt_file_read(file: __file__):
     return line
 
 
-def sim_key_presses(text: str):
+def sim_key_presses(text: str, key: str = CHAT_KEY):
     """Send a chat message using several input methods."""
-    keyboard.press_and_release(CHAT_KEY)
+    keyboard.press_and_release(key)
     time.sleep(0.05)
     try:
         keyboard.write(text)
