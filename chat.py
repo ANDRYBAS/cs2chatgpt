@@ -30,6 +30,7 @@ def debug_log(text: str):
     if dpg.does_item_exist("debug_console"):
         current = dpg.get_value("debug_console")
         dpg.set_value("debug_console", f"{current}{text}\n")
+        dpg.set_y_scroll("debug_console", dpg.get_y_scroll_max("debug_console"))
 
 
 def set_status(sender, app_data, user_data):
@@ -57,10 +58,11 @@ def save_config():
     logger.debug("Configuration saved")
 
 
-def openrouter_interact(user: str, message: str, content=SYSTEM_PROMPT):
+def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTEM_PROMPT):
     logger.debug("Sending to OpenRouter: %s -> %s", user, message)
-    debug_log(f"> {user}: {message}")
-    message = f"I'm {user}, {message}"
+    prefix_text = f"{prefix} " if prefix else ""
+    debug_log(f"> {prefix_text}{user}: {message}")
+    message = f"I'm {prefix_text}{user}, {message}"
 
     messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
     data = {
@@ -102,7 +104,7 @@ def main():
     
 
     dpg.create_context()
-    dpg.create_viewport(title='Chat-Strike', width=600, height=400)
+    dpg.create_viewport(title='Chat-Strike', width=600, height=500)
 
     with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
         dpg.add_text(f"Detected game: {game}")
@@ -119,7 +121,7 @@ def main():
 
         dpg.add_button(label="Start", callback=set_status, user_data=status_text, tag="start_button")
 
-    with dpg.window(label="Debug Console", width=600, height=200, pos=(0,200), tag="Debug Console"):
+    with dpg.window(label="Debug Console", width=600, height=300, pos=(0,200), tag="Debug Console"):
         dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=-1)
 
 
@@ -132,7 +134,7 @@ def main():
         dpg.add_key_press_handler(dpg.mvKey_Add, callback=set_status, user_data=status_text)
 
     if cp.config['SETTINGS']['gameconlogpath'] != None:
-        logfile = open(cp.CON_LOG_FILE_PATH, encoding='utf-8')
+        logfile = open(cp.CON_LOG_FILE_PATH, encoding=cp.CON_LOG_ENCODING, errors='ignore')
         logfile.seek(0, 2)
         logger.debug("Log file opened: %s", cp.CON_LOG_FILE_PATH)
 
@@ -150,14 +152,14 @@ def main():
                 if not line:
                     continue
                 logger.debug(line.strip())
-                username, message, chat_type = cp.parse_log(game, line)
+                username, message, chat_type, prefix = cp.parse_log(game, line)
 
                 if username and message:
                     #print(f"[DEBUG] {username}: {message}:")
                     # This way we prevent chat-gpt from talking to itself
                     logger.debug("Username: %s", username)
                     if username not in cp.BLACKLISTED_USERNAMES:
-                        reply = openrouter_interact(username, message)
+                        reply = openrouter_interact(username, message, prefix)
                         if reply:
                             if reply.strip() == "[IGNORE]":
                                 logger.debug("[IGNORE] received, skipping keystrokes")
