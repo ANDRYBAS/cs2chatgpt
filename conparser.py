@@ -61,6 +61,7 @@ def parse_log(game, line: str):
     if "Source2Shutdown" in line:
         exit() #TODO: make this optional
 
+    is_dead = False # Добавляем флаг для определения статуса "мертв"
     parsed_log = ["", ""]
     username = ""
     message = ""
@@ -87,9 +88,12 @@ def parse_log(game, line: str):
                 else:
                     prefix = "[ВСЕМ]"
                     parsed_log = line.partition("[ВСЕМ] ")[2].split(": ")
+            # Проверяем, есть ли [DEAD] в оригинальной строке лога
             if "[DEAD]" in line:
-                parsed_log[0] = parsed_log[0].replace(" [DEAD]", '')
-                logger.debug("DEAD %s", parsed_log)
+                is_dead = True # Устанавливаем флаг, если игрок мертв
+            # Удаляем старую строку, которая заменяла [DEAD] - теперь она не нужна
+            # parsed_log[0] = parsed_log[0].replace(" [DEAD]", '')
+            # logger.debug("DEAD %s", parsed_log)
 
 
 
@@ -109,7 +113,11 @@ def parse_log(game, line: str):
             return None   
 
     username = parsed_log[0]
-    username = username.replace(u'\u200e', '')  # This gets rid of the 'LEFT-TO-RIGHT MARK' char.
+    username = username.replace(u'‎', '')  # This gets rid of the 'LEFT-TO-RIGHT MARK' char.
+
+    # Если игрок мертв, добавляем [МЕРТВ] к имени пользователя
+    if is_dead:
+        username += ' [МЕРТВ]'
 
     message = parsed_log[1]
 

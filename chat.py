@@ -191,7 +191,6 @@ def main():
                         if reply:
                             if reply.strip() == "[IGNORE]":
                                 logger.debug("[IGNORE] received, skipping keystrokes")
-                                debug_log("[INFO] Reply ignored")
                             else:
                                 key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
                                 cp.sim_key_presses(reply, key)
@@ -199,8 +198,7 @@ def main():
                             logger.debug("Empty reply, skipping keystrokes")
                             debug_log("[INFO] Empty reply")
                     else:
-                        logger.debug("Message ignored from blacklisted user")
-                        debug_log("[INFO] Message ignored from blacklisted user")
+                        logger.debug("Message ignored from blacklisted user") 
                 else:
                     continue
     
