@@ -26,16 +26,24 @@ class Status():
     running = False
 
 
+def debug_log(text: str):
+    if dpg.does_item_exist("debug_console"):
+        current = dpg.get_value("debug_console")
+        dpg.set_value("debug_console", f"{current}{text}\n")
+
+
 def set_status(sender, app_data, user_data):
     if Status.running == False:
         dpg.configure_item("start_button", label="Stop")
         dpg.set_value(user_data, "Running: True")
         logger.debug("Bot started")
+        debug_log("[INFO] Bot started")
 
     elif Status.running == True:
         dpg.configure_item("start_button", label="Start")
         dpg.set_value(user_data, "Running: False")
         logger.debug("Bot stopped")
+        debug_log("[INFO] Bot stopped")
 
     Status.running = not Status.running
 
@@ -51,6 +59,7 @@ def save_config():
 
 def openrouter_interact(user: str, message: str, content=SYSTEM_PROMPT):
     logger.debug("Sending to OpenRouter: %s -> %s", user, message)
+    debug_log(f"> {user}: {message}")
     message = f"I'm {user}, {message}"
 
     messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
@@ -76,6 +85,7 @@ def openrouter_interact(user: str, message: str, content=SYSTEM_PROMPT):
         response.raise_for_status()
         reply = response.json()["choices"][0]["message"]["content"]
         logger.debug("Received from OpenRouter: %s", reply)
+        debug_log(f"< {reply}")
         return reply
     except Exception as exc:
         logger.exception("OpenRouter request failed: %s", exc)
@@ -92,9 +102,9 @@ def main():
     
 
     dpg.create_context()
-    dpg.create_viewport(title='Chat-Strike', width=600, height=300)
+    dpg.create_viewport(title='Chat-Strike', width=600, height=400)
 
-    with dpg.window(label="Chat-Strike", width=600, height=300, tag="Chat-Strike"):
+    with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
         dpg.add_text(f"Detected game: {game}")
         
         dpg.add_input_text(hint="Blacklisted usernames (comma separated)",
@@ -108,6 +118,9 @@ def main():
         status_text = dpg.add_text("Running: False")
 
         dpg.add_button(label="Start", callback=set_status, user_data=status_text, tag="start_button")
+
+    with dpg.window(label="Debug Console", width=600, height=200, pos=(0,200), tag="Debug Console"):
+        dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=-1)
 
 
 
@@ -148,13 +161,16 @@ def main():
                         if reply:
                             if reply.strip() == "[IGNORE]":
                                 logger.debug("[IGNORE] received, skipping keystrokes")
+                                debug_log("[INFO] Reply ignored")
                             else:
                                 key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
                                 cp.sim_key_presses(reply, key)
                         else:
                             logger.debug("Empty reply, skipping keystrokes")
+                            debug_log("[INFO] Empty reply")
                     else:
                         logger.debug("Message ignored from blacklisted user")
+                        debug_log("[INFO] Message ignored from blacklisted user")
                 else:
                     continue
     
