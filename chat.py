@@ -1,5 +1,7 @@
 import requests
 import logging
+import os
+import sys
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
@@ -29,8 +31,8 @@ class Status():
 def debug_log(text: str):
     if dpg.does_item_exist("debug_console"):
         current = dpg.get_value("debug_console")
-        dpg.set_value("debug_console", f"{current}{text}\n")
-        dpg.set_y_scroll("Debug Console", dpg.get_y_scroll_max("Debug Console"))
+        dpg.set_value("debug_console", f"{text}\n{current}")
+        dpg.set_y_scroll("Debug Console", 0)
 
 
 def set_status(sender, app_data, user_data):
@@ -105,6 +107,13 @@ def main():
 
     dpg.create_context()
     dpg.create_viewport(title='Chat-Strike', width=600, height=500)
+
+    if sys.platform.startswith('win'):
+        font_path = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'consola.ttf')
+        if os.path.exists(font_path):
+            with dpg.font_registry():
+                default_font = dpg.add_font(font_path, 16)
+                dpg.bind_font(default_font)
 
     with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
         dpg.add_text(f"Detected game: {game}")
