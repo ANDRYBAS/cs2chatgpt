@@ -21,7 +21,7 @@ If you used the latter option your path probably looks something like this: ``C:
 
 + Open `config.ini` and set `gameconlogpath` to the appropriate path. Здесь же можно указать список ников в `blacklisted_usernames` (через запятую) и свой OpenRouter API ключ.
 
-Now you can do `python chat.py`
+Now you can do `python chat.py`. В интерфейсе появилась отладочная консоль, куда дублируются ваши сообщения и ответы бота.
 
 The system prompt for ChatGPT is stored in `system_prompt.txt`. Вы можете
 отредактировать этот файл, чтобы изменить поведение бота.
