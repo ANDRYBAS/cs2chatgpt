@@ -188,14 +188,15 @@ def main():
                 chat_type = parsed.chat_type
                 prefix = parsed.prefix
                 display_name = (
-                    f"{username} [МЕРТВ]" if parsed.is_dead else username
+                    username
                 )
 
                 if username and message:
                     #print(f"[DEBUG] {username}: {message}:")
                     # This way we prevent chat-gpt from talking to itself
                     logger.debug("Username: %s", username)
-                    if username not in cp.BLACKLISTED_USERNAMES:
+                    checked_username = username.replace(' [МЁРТВ]', '').strip()
+                    if checked_username not in cp.BLACKLISTED_USERNAMES:
                         reply = openrouter_interact(display_name, message, prefix)
                         if reply:
                             if reply.strip() == "[IGNORE]":

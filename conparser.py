@@ -98,12 +98,6 @@ def parse_log(game, line: str):
                 else:
                     prefix = "[ВСЕМ]"
                     parsed_log = line.partition("[ВСЕМ] ")[2].split(": ")
-            # Проверяем, есть ли [DEAD] в оригинальной строке лога
-            if "[DEAD]" in line:
-                is_dead = True # Устанавливаем флаг, если игрок мертв
-            # Удаляем старую строку, которая заменяла [DEAD] - теперь она не нужна
-            # parsed_log[0] = parsed_log[0].replace(" [DEAD]", '')
-            # logger.debug("DEAD %s", parsed_log)
 
 
 
