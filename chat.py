@@ -2,6 +2,7 @@ import requests
 import logging
 import os
 import sys
+import pyperclip # Добавляем импорт для работы с буфером обмена
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
@@ -40,7 +41,7 @@ def set_status(sender, app_data, user_data):
         dpg.configure_item("start_button", label="Stop")
         dpg.set_value(user_data, "Running: True")
         logger.debug("Bot started")
-        debug_log("[ИНФО] Bot started")
+        debug_log("[INFO] Bot started")
 
     elif Status.running == True:
         dpg.configure_item("start_button", label="Start")
@@ -196,7 +197,7 @@ def main():
                     # This way we prevent chat-gpt from talking to itself
                     logger.debug("Username: %s", username)
                     checked_username = username.replace(' [МЁРТВ]', '').strip()
-                    if checked_username not in cp.BLACKLISTED_USERNAMES:
+                    if (checked_username not in cp.BLACKLISTED_USERNAMES) or ("[test]" in message):
                         reply = openrouter_interact(display_name, message, prefix)
                         if reply:
                             if reply.strip() == "[IGNORE]":
@@ -204,6 +205,7 @@ def main():
                             else:
                                 key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
                                 cp.sim_key_presses(reply, key)
+                                pyperclip.copy(reply) # Копируем ответ в буфер обмена
                         else:
                             logger.debug("Empty reply, skipping keystrokes")
                             debug_log("[INFO] Empty reply")
@@ -215,13 +217,6 @@ def main():
     if logfile:
         logfile.close()
     dpg.destroy_context()
-
-
-
-
-
-
-
 
 if __name__ == "__main__":
     main()
