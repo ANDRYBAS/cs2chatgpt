@@ -1,61 +1,55 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/chat.py b/chat.py
-index a5041288a36b3ca0646ad009f599fb1f62ac6af6..d14ef860f67ce5b773f76f4f1df3d8c68071babc 100644
---- a/chat.py
-+++ b/chat.py
-@@ -133,47 +133,50 @@ def main():
-         logger.debug("Log file opened: %s", cp.CON_LOG_FILE_PATH)
+diff --git a/conparser.py b/conparser.py
+index 53685da23e9073dea83398fa03dfa38fb258f808..536209d0cff0336f181933a36121a03352f0f42f 100644
+--- a/conparser.py
++++ b/conparser.py
+@@ -1,43 +1,45 @@
+ import time
+ import configparser
+ import keyboard
+ import psutil
+ import logging
  
-         
+ logger = logging.getLogger(__name__)
+ 
+ config = configparser.ConfigParser()
+ CONFIG_FILE = 'config.ini'
+ 
+ config.read(CONFIG_FILE, encoding='utf-8')
+ 
+ BLACKLISTED_USERNAMES = [name.strip() for name in config['SETTINGS'].get('blacklisted_usernames', '').split(',') if name.strip()]
+ CON_LOG_FILE_PATH = config['SETTINGS']['gameconlogpath']
+ CHAT_KEY = config['SETTINGS']['chatkey']
+ TEAM_CHAT_KEY = config['SETTINGS'].get('teamchatkey', 'u')
+-CON_LOG_ENCODING = config['SETTINGS'].get('conlogencoding', 'cp1251')
++# Use UTF-8 by default as modern Source games output logs in this encoding.
++# Set `conlogencoding` in `config.ini` if your game uses another codepage.
++CON_LOG_ENCODING = config['SETTINGS'].get('conlogencoding', 'utf-8')
  
  
-     while dpg.is_dearpygui_running():
-         dpg.render_dearpygui_frame()
- 
-         if Status.running == True:
-             if logfile:
-                 
-                 line = cp.rt_file_read(logfile)
-                 
-                 if not line:
-                     continue
-                 logger.debug(line.strip())
-                 username, message, chat_type = cp.parse_log(game, line)
- 
-                 if username and message:
-                     #print(f"[DEBUG] {username}: {message}:")
-                     # This way we prevent chat-gpt from talking to itself
-                     logger.debug("Username: %s", username)
-                     if username not in cp.BLACKLISTED_USERNAMES:
-                         reply = openrouter_interact(username, message)
-                         if reply:
--                            key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
--                            cp.sim_key_presses(reply, key)
-+                            if reply.strip() == "[IGNORE]":
-+                                logger.debug("[IGNORE] received, skipping keystrokes")
-+                            else:
-+                                key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
-+                                cp.sim_key_presses(reply, key)
-                         else:
-                             logger.debug("Empty reply, skipping keystrokes")
-                     else:
-                         logger.debug("Message ignored from blacklisted user")
+ def detect_game(custom_proc="customproc"):
+     pname = None
+     for proc in psutil.process_iter():
+         match proc.name():
+             case "hl.exe":
+                 pname = "hl"
+                 break
+             case "hl2.exe":
+                 pname = "hl2"
+                 break
+             case "cs2.exe":
+                 pname = "cs2"
+                 break
+             case _:
+                 if proc.name() == custom_proc:
+                     pname = custom_proc.strip(".exe")
+                     break
                  else:
                      continue
-     
-     if logfile:
-         logfile.close()
-     dpg.destroy_context()
+     return pname
  
  
- 
- 
- 
- 
- 
- 
- if __name__ == "__main__":
-     main()
+ # really hacky but it works
  
 EOF
 )

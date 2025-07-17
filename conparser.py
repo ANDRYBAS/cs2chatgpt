@@ -15,7 +15,9 @@ BLACKLISTED_USERNAMES = [name.strip() for name in config['SETTINGS'].get('blackl
 CON_LOG_FILE_PATH = config['SETTINGS']['gameconlogpath']
 CHAT_KEY = config['SETTINGS']['chatkey']
 TEAM_CHAT_KEY = config['SETTINGS'].get('teamchatkey', 'u')
-CON_LOG_ENCODING = config['SETTINGS'].get('conlogencoding', 'cp1251')
+# Use UTF-8 by default as modern Source games output logs in this encoding.
+# Set `conlogencoding` in `config.ini` if your game uses another codepage.
+CON_LOG_ENCODING = config['SETTINGS'].get('conlogencoding', 'utf-8')
 
 
 def detect_game(custom_proc="customproc"):

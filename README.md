@@ -19,7 +19,10 @@ First, you must enable console logging, to achieve this you can do one of the fo
 
 If you used the latter option your path probably looks something like this: ``C:\Program Files\SteamLibrary\steamapps\common\Counter-Strike Global Offensive\game\csgo\console.log``
 
-+ Open `config.ini` и впишите `gameconlogpath`. Тут же настраивается `conlogencoding`, можно указать список ников в `blacklisted_usernames` и свой OpenRouter API ключ.
++ Open `config.ini` и впишите `gameconlogpath`. Логи CS2 теперь сохраняются в UTF-8,
+поэтому `conlogencoding` по умолчанию установлен в `utf-8`. Если ваш клиент пишет
+лог в другой кодировке (например, `cp1251`), укажите её в этом поле. Здесь же можно
+задать список ников в `blacklisted_usernames` и свой OpenRouter API ключ.
 
 Now you can do `python chat.py`. В интерфейсе появилась отладочная консоль, куда дублируются ваши сообщения и ответы бота.
 
