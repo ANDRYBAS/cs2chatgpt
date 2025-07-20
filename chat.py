@@ -191,6 +191,8 @@ def main():
                 display_name = (
                     username
                 )
+                debug_log(display_name)
+                debug_log(prefix)
 
                 if username and message:
                     #print(f"[DEBUG] {username}: {message}:")

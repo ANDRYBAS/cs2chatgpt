@@ -77,6 +77,7 @@ def parse_log(game, line: str):
     message = ""
     chat_type = None
     prefix = ""
+    
     match game:
         case "cs2":
             if "[TEAM]" in line or "[Т]" in line or "[СП]" in line:
