@@ -189,8 +189,7 @@ def main():
                 chat_type = parsed.chat_type
                 prefix = parsed.prefix
                 display_name = cp.sanitize_username(username)
-                debug_log(display_name)
-                debug_log(prefix)
+
 
                 if username and message:
                     #print(f"[DEBUG] {username}: {message}:")
@@ -200,6 +199,8 @@ def main():
                     blacklisted = any(
                         checked_username == b.lower() for b in cp.BLACKLISTED_USERNAMES
                     )
+                    debug_log(checked_username)
+                    debug_log(display_name)
                     if (not blacklisted) or ("[test]" in message):
                         reply = openrouter_interact(display_name, message, prefix)
                         if reply:
