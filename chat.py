@@ -188,9 +188,7 @@ def main():
                 message = parsed.message
                 chat_type = parsed.chat_type
                 prefix = parsed.prefix
-                display_name = (
-                    username
-                )
+                display_name = cp.sanitize_username(username)
                 debug_log(display_name)
                 debug_log(prefix)
 
@@ -198,8 +196,11 @@ def main():
                     #print(f"[DEBUG] {username}: {message}:")
                     # This way we prevent chat-gpt from talking to itself
                     logger.debug("Username: %s", username)
-                    checked_username = username.replace(' [МЁРТВ]', '').strip()
-                    if (checked_username not in cp.BLACKLISTED_USERNAMES) or ("[test]" in message):
+                    checked_username = cp.sanitize_username(username).lower()
+                    blacklisted = any(
+                        checked_username == b.lower() for b in cp.BLACKLISTED_USERNAMES
+                    )
+                    if (not blacklisted) or ("[test]" in message):
                         reply = openrouter_interact(display_name, message, prefix)
                         if reply:
                             if reply.strip() == "[IGNORE]":

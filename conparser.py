@@ -30,6 +30,18 @@ class ParsedLog:
     is_dead: bool = False
 
 
+def sanitize_username(name: str) -> str:
+    """Strip location markers and death tags from username."""
+    if not name:
+        return ""
+    name = name.replace(" [МЁРТВ]", "")
+    for sep in ("@", "﹫"):
+        if sep in name:
+            name = name.split(sep, 1)[0]
+            break
+    return name.strip()
+
+
 def detect_game(custom_proc="customproc"):
     pname = None
     for proc in psutil.process_iter():
