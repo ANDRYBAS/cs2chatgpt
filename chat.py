@@ -2,7 +2,8 @@ import requests
 import logging
 import os
 import sys
-import pyperclip # Добавляем импорт для работы с буфером обмена
+from collections import deque
+import pyperclip  # работа с буфером обмена
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
@@ -25,8 +26,21 @@ except FileNotFoundError:
     logger.debug("System prompt file not found, using default")
     SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
 
-# История диалога для отправки полным контекстом в OpenRouter
-conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+# История диалога. Ограничиваем размер, чтобы не съесть лишние токены
+MAX_HISTORY_TOKENS = 4000
+conversation_history = deque([
+    {"role": "system", "content": SYSTEM_PROMPT}
+], maxlen=50)
+
+
+def _count_tokens(messages):
+    """Очень грубая оценка числа токенов."""
+    return sum(len(m.get("content", "").split()) for m in messages)
+
+
+def _trim_history():
+    while len(conversation_history) > 1 and _count_tokens(conversation_history) > MAX_HISTORY_TOKENS:
+        conversation_history.popleft()
 
 class Status():
     running = False
@@ -64,14 +78,15 @@ def save_config():
     logger.debug("Configuration saved")
 
 
-def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTEM_PROMPT):
+def openrouter_interact(user: str, message: str, prefix: str = ""):
     logger.debug("Sending to OpenRouter: %s -> %s", user, message)
     prefix_text = f"{prefix} " if prefix else ""
     debug_log(f"> {prefix_text}{user}: {message}")
-    message = f"I'm {prefix_text}{user}, {message}"
+    message = f"{prefix_text}{user}: {message}"
 
     global conversation_history
     conversation_history.append({"role": "user", "content": message})
+    _trim_history()
 
     messages = conversation_history
     data = {
@@ -96,12 +111,27 @@ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTE
         response.raise_for_status()
         reply = response.json()["choices"][0]["message"]["content"]
         conversation_history.append({"role": "assistant", "content": reply})
+        _trim_history()
         logger.debug("Received from OpenRouter: %s", reply)
         debug_log(f"< {reply}")
         return reply
     except Exception as exc:
         logger.exception("OpenRouter request failed: %s", exc)
+        if conversation_history:
+            conversation_history.pop()
         return ""
+
+
+def reset_history():
+    conversation_history.clear()
+    conversation_history.append({"role": "system", "content": SYSTEM_PROMPT})
+    debug_log("[INFO] history reset")
+
+
+def show_history():
+    text = "\n".join(f"{m['role']}: {m['content']}" for m in conversation_history)
+    print(text)
+    debug_log(text)
 
 
 def main():
@@ -156,6 +186,8 @@ def main():
         status_text = dpg.add_text("Running: False")
 
         dpg.add_button(label="Start", callback=set_status, user_data=status_text, tag="start_button")
+        dpg.add_button(label="Reset history", callback=lambda: reset_history())
+        dpg.add_button(label="Show history", callback=lambda: show_history())
 
     with dpg.window(label="Debug Console", width=600, height=300, pos=(0,200), tag="Debug Console"):
         dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=280)
@@ -184,10 +216,13 @@ def main():
             if logfile:
                 
                 line = cp.rt_file_read(logfile)
-                
+
                 if not line:
                     continue
-                logger.debug(line.strip())
+                line = line.strip()
+                if not line:
+                    continue
+                logger.debug(line)
                 parsed = cp.parse_log(game, line)
                 if parsed is None:
                     continue
