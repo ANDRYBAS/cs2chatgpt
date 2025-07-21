@@ -199,8 +199,7 @@ def main():
                     blacklisted = any(
                         checked_username == b.lower() for b in cp.BLACKLISTED_USERNAMES
                     )
-                    debug_log(checked_username)
-                    debug_log(display_name)
+
                     if (not blacklisted) or ("[test]" in message):
                         reply = openrouter_interact(display_name, message, prefix)
                         if reply:
