@@ -27,7 +27,7 @@ except FileNotFoundError:
     SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
 
 # История диалога. Ограничиваем размер, чтобы не съесть лишние токены
-MAX_HISTORY_TOKENS = 4000
+MAX_HISTORY_TOKENS = 3000
 conversation_history = deque([
     {"role": "system", "content": SYSTEM_PROMPT}
 ], maxlen=50)
@@ -88,9 +88,9 @@ def openrouter_interact(user: str, message: str, prefix: str = ""):
     conversation_history.append({"role": "user", "content": message})
     _trim_history()
 
-    messages = conversation_history
+    messages = list(conversation_history)
     data = {
-        "model": "openai/gpt-4.1-mini",
+        "model": "deepseek/deepseek-chat-v3-0324",
         "messages": messages,
     }
     headers = {
@@ -129,7 +129,11 @@ def reset_history():
 
 
 def show_history():
-    text = "\n".join(f"{m['role']}: {m['content']}" for m in conversation_history)
+    messages = list(conversation_history)
+    if messages and messages[0].get("role") == "system":
+        messages = messages[1:]
+    messages = list(reversed(messages))
+    text = "\n".join(f"{m['role']}: {m['content']}" for m in messages)
     print(text)
     debug_log(text)
 
@@ -144,7 +148,7 @@ def main():
     
 
     dpg.create_context()
-    dpg.create_viewport(title='Chat-Strike', width=600, height=500)
+    dpg.create_viewport(title='Chat-Strike', width=600, height=600)
 
     if sys.platform.startswith('win'):
         # Попробуем подобрать стандартный моноширинный шрифт с поддержкой кириллицы
@@ -172,7 +176,7 @@ def main():
                     dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
                 dpg.bind_font(default_font)
 
-    with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
+    with dpg.window(label="Chat-Strike", width=600, height=250, tag="Chat-Strike"):
         dpg.add_text(f"Detected game: {game}")
         
         dpg.add_input_text(hint="Blacklisted usernames (comma separated)",
@@ -189,7 +193,7 @@ def main():
         dpg.add_button(label="Reset history", callback=lambda: reset_history())
         dpg.add_button(label="Show history", callback=lambda: show_history())
 
-    with dpg.window(label="Debug Console", width=600, height=300, pos=(0,200), tag="Debug Console"):
+    with dpg.window(label="Debug Console", width=600, height=300, pos=(0,260), tag="Debug Console"):
         dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=280)
 
 
