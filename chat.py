@@ -25,6 +25,9 @@ except FileNotFoundError:
     logger.debug("System prompt file not found, using default")
     SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
 
+# История диалога для отправки полным контекстом в OpenRouter
+conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+
 class Status():
     running = False
 
@@ -67,7 +70,10 @@ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTE
     debug_log(f"> {prefix_text}{user}: {message}")
     message = f"I'm {prefix_text}{user}, {message}"
 
-    messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
+    global conversation_history
+    conversation_history.append({"role": "user", "content": message})
+
+    messages = conversation_history
     data = {
         "model": "openai/gpt-4.1-mini",
         "messages": messages,
@@ -89,6 +95,7 @@ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTE
         logger.debug("OpenRouter status: %s", response.status_code)
         response.raise_for_status()
         reply = response.json()["choices"][0]["message"]["content"]
+        conversation_history.append({"role": "assistant", "content": reply})
         logger.debug("Received from OpenRouter: %s", reply)
         debug_log(f"< {reply}")
         return reply

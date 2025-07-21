@@ -1,9 +1,108 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/chat.py b/chat.py
-index 3976b5d8fdec5a79b9b57d8b7ce79df0e61d0df9..3a8c4d71c7718651ec12cad7c58c6f1ed092f976 100644
+index 2a210d6a39069fed8107deb396515292d028b473..6ab26e26fea69ec353ecdc78ca1c7f4dc31ad49e 100644
 --- a/chat.py
 +++ b/chat.py
-@@ -93,67 +93,67 @@ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTE
+@@ -3,114 +3,121 @@ import logging
+ import os
+ import sys
+ import pyperclip # Добавляем импорт для работы с буфером обмена
+ 
+ import dearpygui.dearpygui as dpg
+ import conparser as cp
+ 
+ logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(message)s')
+ logger = logging.getLogger(__name__)
+ 
+ 
+ OPENROUTER_API_KEY = cp.config['SETTINGS']['openrouterapikey']
+ 
+ SYSTEM_PROMPT_FILE = "system_prompt.txt"
+ DEFAULT_SYSTEM_PROMPT = (
+     "Ты - игрок в кс2. Ограничивай ответ до 120 символов. "
+ )
+ 
+ try:
+     with open(SYSTEM_PROMPT_FILE, encoding="utf-8") as f:
+         SYSTEM_PROMPT = f.read().strip()
+ except FileNotFoundError:
+     logger.debug("System prompt file not found, using default")
+     SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
+ 
++# История диалога для отправки полным контекстом в OpenRouter
++conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
++
+ class Status():
+     running = False
+ 
+ 
+ def debug_log(text: str):
+     if dpg.does_item_exist("debug_console"):
+         current = dpg.get_value("debug_console")
+         dpg.set_value("debug_console", f"{text}\n{current}")
+         dpg.set_y_scroll("Debug Console", 0)
+ 
+ 
+ def set_status(sender, app_data, user_data):
+     if Status.running == False:
+         dpg.configure_item("start_button", label="Stop")
+         dpg.set_value(user_data, "Running: True")
+         logger.debug("Bot started")
+         debug_log("[INFO] Bot started")
+ 
+     elif Status.running == True:
+         dpg.configure_item("start_button", label="Start")
+         dpg.set_value(user_data, "Running: False")
+         logger.debug("Bot stopped")
+         debug_log("[INFO] Bot stopped")
+ 
+     Status.running = not Status.running
+ 
+ 
+ def save_config():
+     cp.config['SETTINGS']['blacklisted_usernames'] = dpg.get_value("usernames")
+     cp.config['SETTINGS']['gameconlogpath'] = dpg.get_value("conlog")
+     cp.config['SETTINGS']['chatkey'] = dpg.get_value("chat_keybind")
+     with open(cp.CONFIG_FILE, 'w') as configfile:
+         cp.config.write(configfile)
+     logger.debug("Configuration saved")
+ 
+ 
+ def openrouter_interact(user: str, message: str, prefix: str = "", content=SYSTEM_PROMPT):
+     logger.debug("Sending to OpenRouter: %s -> %s", user, message)
+     prefix_text = f"{prefix} " if prefix else ""
+     debug_log(f"> {prefix_text}{user}: {message}")
+     message = f"I'm {prefix_text}{user}, {message}"
+ 
+-    messages = [{"role": "system", "content": content}, {"role": "user", "content": message}]
++    global conversation_history
++    conversation_history.append({"role": "user", "content": message})
++
++    messages = conversation_history
+     data = {
+         "model": "openai/gpt-4.1-mini",
+         "messages": messages,
+     }
+     headers = {
+         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+         "HTTP-Referer": "https://github.com/ANDRYBAS/cs2chatgpt",
+         "X-Title": "Chat-Strike",
+         "Content-Type": "application/json",
+     }
+ 
+     try:
+         response = requests.post(
+             "https://openrouter.ai/api/v1/chat/completions",
+             headers=headers,
+             json=data,
+             timeout=30,
+         )
+         logger.debug("OpenRouter status: %s", response.status_code)
+         response.raise_for_status()
+         reply = response.json()["choices"][0]["message"]["content"]
++        conversation_history.append({"role": "assistant", "content": reply})
+         logger.debug("Received from OpenRouter: %s", reply)
+         debug_log(f"< {reply}")
          return reply
      except Exception as exc:
          logger.exception("OpenRouter request failed: %s", exc)
@@ -27,56 +126,6 @@ index 3976b5d8fdec5a79b9b57d8b7ce79df0e61d0df9..3a8c4d71c7718651ec12cad7c58c6f1e
          win_dir = os.environ.get('WINDIR', 'C:\\Windows')
          for fname in ("consola.ttf", "lucon.ttf", "cour.ttf"):
              font_path = os.path.join(win_dir, "Fonts", fname)
-             if os.path.exists(font_path):
-                 with dpg.font_registry():
--                    default_font = dpg.add_font(font_path, 14)
--                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-+                    with dpg.font(font_path, 14) as default_font:
-+                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-                     dpg.bind_font(default_font)
-                 break
-         else:
-             font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
-             if os.path.exists(font_path):
-                 with dpg.font_registry():
--                    default_font = dpg.add_font(font_path, 14)
--                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-+                    with dpg.font(font_path, 14) as default_font:
-+                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-                     dpg.bind_font(default_font)
-     else:
-         font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSansMono.ttf")
-         if os.path.exists(font_path):
-             with dpg.font_registry():
--                default_font = dpg.add_font(font_path, 14)
--                dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-+                with dpg.font(font_path, 14) as default_font:
-+                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-                 dpg.bind_font(default_font)
- 
-     with dpg.window(label="Chat-Strike", width=600, height=180, tag="Chat-Strike"):
-         dpg.add_text(f"Detected game: {game}")
-         
-         dpg.add_input_text(hint="Blacklisted usernames (comma separated)",
-                            default_value=','.join(cp.BLACKLISTED_USERNAMES),
-                            tag="usernames")
-         dpg.add_input_text(hint=".log file path", default_value=cp.CON_LOG_FILE_PATH, tag="conlog")
-         dpg.add_input_text(hint="OpenRouter key", default_value=OPENROUTER_API_KEY, password=True, tag="openapi_key")
-         dpg.add_input_text(hint="Chat keybind", default_value=cp.CHAT_KEY, tag="chat_keybind")
- 
-         dpg.add_button(label="Save", callback=save_config)
-         status_text = dpg.add_text("Running: False")
- 
-         dpg.add_button(label="Start", callback=set_status, user_data=status_text, tag="start_button")
- 
-     with dpg.window(label="Debug Console", width=600, height=300, pos=(0,200), tag="Debug Console"):
-         dpg.add_input_text(tag="debug_console", multiline=True, readonly=True, width=-1, height=280)
- 
- 
- 
-     dpg.set_primary_window("Chat-Strike", True)
-     dpg.setup_dearpygui()
-     dpg.show_viewport()
  
 EOF
 )
