@@ -4,6 +4,7 @@ import os
 import sys
 from collections import deque
 import pyperclip  # работа с буфером обмена
+import re
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 OPENROUTER_API_KEY = cp.config['SETTINGS']['openrouterapikey']
 
 SYSTEM_PROMPT_FILE = "system_prompt.txt"
+BIND_PROMPTS_DIR = "bind_prompts"
 DEFAULT_SYSTEM_PROMPT = (
     "Ты - игрок в кс2. Ограничивай ответ до 120 символов. "
 )
@@ -44,6 +46,66 @@ def _trim_history():
 
 class Status():
     running = False
+
+
+def load_bind_prompts(directory: str) -> dict[int, str]:
+    prompts = {}
+    if not os.path.isdir(directory):
+        return prompts
+    for i in range(1, 11):
+        path = os.path.join(directory, f"bind{i}.txt")
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                prompts[i] = f.read().strip()
+    return prompts
+
+
+_BIND_PROMPTS = load_bind_prompts(BIND_PROMPTS_DIR)
+
+BIND_PATTERN = re.compile(r"\[?bind(\d{1,2})\]?(?:\s+(team|all))?", re.IGNORECASE)
+
+
+def check_bind_command(line: str):
+    match = BIND_PATTERN.search(line)
+    if not match:
+        return None
+    slot = int(match.group(1))
+    if slot < 1 or slot > 10:
+        return None
+    chat_type = (match.group(2) or "all").lower()
+    prompt = _BIND_PROMPTS.get(slot)
+    if not prompt:
+        return None
+    return slot, chat_type, prompt
+
+
+def openrouter_quick_prompt(prompt: str) -> str:
+    data = {
+        "model": "deepseek/deepseek-chat-v3-0324",
+        "messages": [{"role": "system", "content": prompt}],
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://github.com/ANDRYBAS/cs2chatgpt",
+        "X-Title": "Chat-Strike",
+        "Content-Type": "application/json",
+    }
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=30,
+        )
+        logger.debug("OpenRouter status: %s", response.status_code)
+        response.raise_for_status()
+        reply = response.json()["choices"][0]["message"]["content"]
+        logger.debug("Received from OpenRouter: %s", reply)
+        debug_log(f"< {reply}")
+        return reply
+    except Exception as exc:
+        logger.exception("OpenRouter quick prompt failed: %s", exc)
+        return ""
 
 
 def debug_log(text: str):
@@ -227,6 +289,16 @@ def main():
                 if not line:
                     continue
                 logger.debug(line)
+                bind_data = check_bind_command(line)
+                if bind_data:
+                    _slot, chat_type, prompt = bind_data
+                    reply = openrouter_quick_prompt(prompt)
+                    if reply:
+                        key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
+                        cp.sim_key_presses(reply, key)
+                        pyperclip.copy(reply)
+                    continue
+
                 parsed = cp.parse_log(game, line)
                 if parsed is None:
                     continue

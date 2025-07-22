@@ -54,3 +54,17 @@ Now the bot pastes messages from the clipboard to avoid stray characters when mo
 
 If messages do not appear in game, try running the script with administrator rights. Some games ignore simulated key presses without the proper permissions.
 If the LLM replies with `[IGNORE]`, nothing will be sent to the in-game chat.
+
+## Bind prompts
+
+В папке `bind_prompts` лежат файлы `bind1.txt` – `bind10.txt`.
+В каждом напишите системный промпт для быстрого сообщения.
+В игре можно создать бинды так:
+
+```
+bind "f3" "echo [bind1 team]"
+bind "f4" "echo [bind2]"
+```
+
+`team` или `all` после названия задаёт тип чата. При нажатии клавиши бот
+отправит сгенерированный текст в выбранный чат без учёта истории.
