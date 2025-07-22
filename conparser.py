@@ -158,21 +158,27 @@ def rt_file_read(file: __file__):
 
 def sim_key_presses(text: str, key: str = CHAT_KEY):
     """Send a chat message using clipboard paste to avoid stray key presses."""
-    keyboard.press_and_release(key)
-    time.sleep(0.05)
 
-    prev_clip = pyperclip.paste()
-    pyperclip.copy(text)
+    blocked = ['w', 'a', 's', 'd']
+    for k in blocked:
+        keyboard.block_key(k)
 
-    # replace any accidental input (e.g. held movement keys)
-    keyboard.press_and_release('ctrl+a')
-    time.sleep(0.01)
-    keyboard.press_and_release('ctrl+v')
-    time.sleep(0.05)
-    keyboard.press_and_release('enter')
+    try:
+        keyboard.press_and_release(key)
+        time.sleep(0.05)
 
-    # restore previous clipboard contents
-    pyperclip.copy(prev_clip)
+        prev_clip = pyperclip.paste()
+        pyperclip.copy(text)
+
+        keyboard.press_and_release('ctrl+a')
+        time.sleep(0.01)
+        keyboard.press_and_release('ctrl+v')
+        time.sleep(0.05)
+        keyboard.press_and_release('enter')
+    finally:
+        pyperclip.copy(prev_clip)
+        for k in blocked:
+            keyboard.unblock_key(k)
 
 
 def _win32_write(text: str):
