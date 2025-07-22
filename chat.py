@@ -5,6 +5,7 @@ import sys
 from collections import deque
 import pyperclip  # работа с буфером обмена
 import re
+import time
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
@@ -62,10 +63,12 @@ def load_bind_prompts(directory: str) -> dict[int, str]:
 
 _BIND_PROMPTS = load_bind_prompts(BIND_PROMPTS_DIR)
 
-BIND_PATTERN = re.compile(r"\[?bind(\d{1,2})\]?(?:\s+(team|all))?", re.IGNORECASE)
+# Матчим строку вида "[bind1]" или "[bind1 all]"
+BIND_PATTERN = re.compile(r"\[bind(\d{1,2})(?:\s+(team|all))?\]", re.IGNORECASE)
 
 
 def check_bind_command(line: str):
+    """Проверяем строку из лога на команду вида [bindN]."""
     match = BIND_PATTERN.search(line)
     if not match:
         return None
@@ -76,12 +79,13 @@ def check_bind_command(line: str):
     prompt = _BIND_PROMPTS.get(slot)
     if not prompt:
         return None
+
     return slot, chat_type, prompt
 
 
 def openrouter_quick_prompt(prompt: str) -> str:
     data = {
-        "model": "deepseek/deepseek-chat-v3-0324",
+        "model": "openai/gpt-4.1-mini",
         "messages": [{"role": "system", "content": prompt}],
     }
     headers = {

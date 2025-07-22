@@ -1,80 +1,123 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/conparser.py b/conparser.py
-index a1375229acb5167917fa4898ae0b597b5ef83056..d759631238f66a8159d9269078138e200114e904 100644
---- a/conparser.py
-+++ b/conparser.py
-@@ -136,53 +136,59 @@ def parse_log(game, line: str):
-     message = parsed_log[1]
+diff --git a/chat.py b/chat.py
+index 20ea1af55e5c1db4987a148362d74a2bacfdcd29..a43802606abbc43e16798d407fccac6f92b31a7c 100644
+--- a/chat.py
++++ b/chat.py
+@@ -1,32 +1,33 @@
+ import requests
+ import logging
+ import os
+ import sys
+ from collections import deque
+ import pyperclip  # работа с буфером обмена
+ import re
++import time
  
-     logger.debug(
-         "Parsed line '%s' -> %s",
-         line.strip(),
-         [username, message, chat_type, prefix, is_dead]
-     )
+ import dearpygui.dearpygui as dpg
+ import conparser as cp
  
-     return ParsedLog(username, message, chat_type, prefix, is_dead)
- 
- 
- 
- 
- 
- def rt_file_read(file: __file__):
-     """Reads console.log in real time and yields new lines."""
-     line = file.readline()
-     if not line:
-         # небольшая пауза, чтобы не крутить цикл на 100%
-         time.sleep(0.01)
-     return line
+ logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(message)s')
+ logger = logging.getLogger(__name__)
  
  
- def sim_key_presses(text: str, key: str = CHAT_KEY):
-     """Send a chat message using clipboard paste to avoid stray key presses."""
--    keyboard.press_and_release(key)
--    time.sleep(0.05)
+ OPENROUTER_API_KEY = cp.config['SETTINGS']['openrouterapikey']
  
--    prev_clip = pyperclip.paste()
--    pyperclip.copy(text)
-+    blocked = ['w', 'a', 's', 'd']
-+    for k in blocked:
-+        keyboard.block_key(k)
+ SYSTEM_PROMPT_FILE = "system_prompt.txt"
+ BIND_PROMPTS_DIR = "bind_prompts"
+ DEFAULT_SYSTEM_PROMPT = (
+     "Ты - игрок в кс2. Ограничивай ответ до 120 символов. "
+ )
  
--    # replace any accidental input (e.g. held movement keys)
--    keyboard.press_and_release('ctrl+a')
--    time.sleep(0.01)
--    keyboard.press_and_release('ctrl+v')
--    time.sleep(0.05)
--    keyboard.press_and_release('enter')
-+    try:
-+        keyboard.press_and_release(key)
-+        time.sleep(0.05)
+ try:
+     with open(SYSTEM_PROMPT_FILE, encoding="utf-8") as f:
+         SYSTEM_PROMPT = f.read().strip()
+ except FileNotFoundError:
+     logger.debug("System prompt file not found, using default")
+     SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
  
--    # restore previous clipboard contents
--    pyperclip.copy(prev_clip)
-+        prev_clip = pyperclip.paste()
-+        pyperclip.copy(text)
+ # История диалога. Ограничиваем размер, чтобы не съесть лишние токены
+ MAX_HISTORY_TOKENS = 3000
+diff --git a/chat.py b/chat.py
+index 20ea1af55e5c1db4987a148362d74a2bacfdcd29..a43802606abbc43e16798d407fccac6f92b31a7c 100644
+--- a/chat.py
++++ b/chat.py
+@@ -40,64 +41,75 @@ def _count_tokens(messages):
+     return sum(len(m.get("content", "").split()) for m in messages)
+ 
+ 
+ def _trim_history():
+     while len(conversation_history) > 1 and _count_tokens(conversation_history) > MAX_HISTORY_TOKENS:
+         conversation_history.popleft()
+ 
+ class Status():
+     running = False
+ 
+ 
+ def load_bind_prompts(directory: str) -> dict[int, str]:
+     prompts = {}
+     if not os.path.isdir(directory):
+         return prompts
+     for i in range(1, 11):
+         path = os.path.join(directory, f"bind{i}.txt")
+         if os.path.exists(path):
+             with open(path, encoding="utf-8") as f:
+                 prompts[i] = f.read().strip()
+     return prompts
+ 
+ 
+ _BIND_PROMPTS = load_bind_prompts(BIND_PROMPTS_DIR)
+ 
+-BIND_PATTERN = re.compile(r"\[?bind(\d{1,2})\]?(?:\s+(team|all))?", re.IGNORECASE)
++# Матчим строку вида "[bind1]" или "[bind1 all]"
++BIND_PATTERN = re.compile(r"\[bind(\d{1,2})(?:\s+(team|all))?\]", re.IGNORECASE)
 +
-+        keyboard.press_and_release('ctrl+a')
-+        time.sleep(0.01)
-+        keyboard.press_and_release('ctrl+v')
-+        time.sleep(0.05)
-+        keyboard.press_and_release('enter')
-+    finally:
-+        pyperclip.copy(prev_clip)
-+        for k in blocked:
-+            keyboard.unblock_key(k)
++# Запоминаем время последнего срабатывания, чтобы игнорировать дубли из echo
++_LAST_BIND_TIME: dict[int, float] = {}
  
  
- def _win32_write(text: str):
-     """Fallback input using Win32 API for games that ignore keyboard.write."""
-     import ctypes
+ def check_bind_command(line: str):
++    """Проверяем строку из лога на команду вида [bindN]."""
+     match = BIND_PATTERN.search(line)
+     if not match:
+         return None
+     slot = int(match.group(1))
+     if slot < 1 or slot > 10:
+         return None
+     chat_type = (match.group(2) or "all").lower()
+     prompt = _BIND_PROMPTS.get(slot)
+     if not prompt:
+         return None
++
++    now = time.time()
++    last = _LAST_BIND_TIME.get(slot, 0)
++    if now - last < 0.5:
++        return None
++    _LAST_BIND_TIME[slot] = now
+     return slot, chat_type, prompt
  
-     user32 = ctypes.windll.user32
-     for char in text:
-         vk = user32.VkKeyScanW(ord(char)) & 0xFF
-         user32.keybd_event(vk, 0, 0, 0)
-         user32.keybd_event(vk, 0, 2, 0)
  
- 
+ def openrouter_quick_prompt(prompt: str) -> str:
+     data = {
+         "model": "deepseek/deepseek-chat-v3-0324",
+         "messages": [{"role": "system", "content": prompt}],
+     }
+     headers = {
+         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+         "HTTP-Referer": "https://github.com/ANDRYBAS/cs2chatgpt",
+         "X-Title": "Chat-Strike",
+         "Content-Type": "application/json",
+     }
+     try:
+         response = requests.post(
+             "https://openrouter.ai/api/v1/chat/completions",
+             headers=headers,
+             json=data,
+             timeout=30,
+         )
+         logger.debug("OpenRouter status: %s", response.status_code)
+         response.raise_for_status()
+         reply = response.json()["choices"][0]["message"]["content"]
+         logger.debug("Received from OpenRouter: %s", reply)
  
 EOF
 )
