@@ -50,6 +50,7 @@ with open(cp.CON_LOG_FILE_PATH, encoding=cp.CON_LOG_ENCODING) as logfile:
 ## How it works
 
 Very similar to Isaac's framework this script reads the console log file. New entries are parsed and sent to chat-gpt to generate a response which is then sent back in game chat through simulated keystrokes.
+Now the bot pastes messages from the clipboard to avoid stray characters when movement keys are held.
 
 If messages do not appear in game, try running the script with administrator rights. Some games ignore simulated key presses without the proper permissions.
 If the LLM replies with `[IGNORE]`, nothing will be sent to the in-game chat.
