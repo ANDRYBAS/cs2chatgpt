@@ -6,6 +6,7 @@ from collections import deque
 import pyperclip  # работа с буфером обмена
 import re
 import time
+import keyboard
 
 import dearpygui.dearpygui as dpg
 import conparser as cp
@@ -66,6 +67,12 @@ _BIND_PROMPTS = load_bind_prompts(BIND_PROMPTS_DIR)
 # Матчим строку вида "[bind1]" или "[bind1 all]"
 BIND_PATTERN = re.compile(r"\[bind(\d{1,2})(?:\s+(team|all))?\]", re.IGNORECASE)
 
+# Загрузка хоткеев из конфига
+HOTKEY_COMMANDS = {}
+if cp.config.has_section("HOTKEYS"):
+    for key_name, command in cp.config["HOTKEYS"].items():
+        HOTKEY_COMMANDS[key_name.lower()] = command
+
 
 def check_bind_command(line: str):
     """Проверяем строку из лога на команду вида [bindN]."""
@@ -81,6 +88,23 @@ def check_bind_command(line: str):
         return None
 
     return slot, chat_type, prompt
+
+
+def trigger_bind(slot: int, chat_type: str, prompt: str):
+    reply = openrouter_quick_prompt(prompt)
+    if reply:
+        key = cp.TEAM_CHAT_KEY if chat_type == "team" else cp.CHAT_KEY
+        cp.sim_key_presses(reply, key)
+        pyperclip.copy(reply)
+
+
+def handle_hotkey(command: str):
+    data = check_bind_command(command)
+    if not data:
+        logger.debug("Unknown hotkey command: %s", command)
+        return
+    slot, chat_type, prompt = data
+    trigger_bind(slot, chat_type, prompt)
 
 
 def openrouter_quick_prompt(prompt: str) -> str:
@@ -117,6 +141,22 @@ def debug_log(text: str):
         current = dpg.get_value("debug_console")
         dpg.set_value("debug_console", f"{text}\n{current}")
         dpg.set_y_scroll("Debug Console", 0)
+
+
+def setup_hotkeys():
+    for key_name, command in HOTKEY_COMMANDS.items():
+        try:
+            keyboard.add_hotkey(key_name, lambda cmd=command: handle_hotkey(cmd))
+            logger.debug("Hotkey registered: %s -> %s", key_name, command)
+        except Exception as exc:
+            logger.exception("Failed to register hotkey %s: %s", key_name, exc)
+
+
+def clear_hotkeys():
+    try:
+        keyboard.clear_all_hotkeys()
+    except Exception as exc:
+        logger.exception("Failed to clear hotkeys: %s", exc)
 
 
 def set_status(sender, app_data, user_data):
@@ -268,6 +308,8 @@ def main():
     dpg.setup_dearpygui()
     dpg.show_viewport()
 
+    setup_hotkeys()
+
     with dpg.handler_registry():
         dpg.add_key_press_handler(dpg.mvKey_Add, callback=set_status, user_data=status_text)
 
@@ -341,6 +383,7 @@ def main():
     
     if logfile:
         logfile.close()
+    clear_hotkeys()
     dpg.destroy_context()
 
 if __name__ == "__main__":
