@@ -1,6 +1,7 @@
 import time
 import configparser
 import keyboard
+import pyperclip
 import psutil
 import logging
 from dataclasses import dataclass
@@ -156,16 +157,22 @@ def rt_file_read(file: __file__):
 
 
 def sim_key_presses(text: str, key: str = CHAT_KEY):
-    """Send a chat message using several input methods."""
+    """Send a chat message using clipboard paste to avoid stray key presses."""
     keyboard.press_and_release(key)
     time.sleep(0.05)
-    try:
-        keyboard.write(text)
-    except Exception as exc:
-        logger.debug("keyboard.write failed: %s, falling back to win32", exc)
-        _win32_write(text)
+
+    prev_clip = pyperclip.paste()
+    pyperclip.copy(text)
+
+    # replace any accidental input (e.g. held movement keys)
+    keyboard.press_and_release('ctrl+a')
+    time.sleep(0.01)
+    keyboard.press_and_release('ctrl+v')
     time.sleep(0.05)
     keyboard.press_and_release('enter')
+
+    # restore previous clipboard contents
+    pyperclip.copy(prev_clip)
 
 
 def _win32_write(text: str):
